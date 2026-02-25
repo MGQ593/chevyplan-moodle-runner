@@ -8,6 +8,8 @@ RUN set -eux; \
       libjpeg62-turbo-dev \
       libfreetype6-dev \
       libzip-dev \
+      libicu-dev \
+      libonig-dev \
       unzip \
       git \
       curl \
@@ -25,6 +27,8 @@ RUN set -eux; \
       pdo_mysql \
       zip \
       opcache \
+      intl \
+      mbstring \
     ; \
     a2enmod rewrite
 
@@ -69,3 +73,4 @@ ENV MOODLE_WWWROOT="http://localhost" \
 WORKDIR /var/www/html
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["apache2-foreground"]

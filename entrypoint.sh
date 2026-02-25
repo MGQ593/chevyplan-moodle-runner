@@ -20,6 +20,8 @@ ${MOODLE_DB_NAME:?La variable MOODLE_DB_NAME es requerida}"
 ${MOODLE_DB_USER:?La variable MOODLE_DB_USER es requerida}"
   : "
 ${MOODLE_DB_PASS:?La variable MOODLE_DB_PASS es requerida}"
+  : "
+${MOODLE_ADMIN_PASS:?La variable MOODLE_ADMIN_PASS es requerida}"
 
   # Espera básica a que la DB esté disponible (MySQL/MariaDB)
   echo "[entrypoint] Esperando disponibilidad de base de datos en ${MOODLE_DB_HOST}..."
@@ -43,6 +45,22 @@ ${MOODLE_DB_PASS:?La variable MOODLE_DB_PASS es requerida}"
     sleep 2
   done
 
+  if ! php -r '
+    $h=getenv("MOODLE_DB_HOST");
+    $db=getenv("MOODLE_DB_NAME");
+    $u=getenv("MOODLE_DB_USER");
+    $p=getenv("MOODLE_DB_PASS");
+    try {
+      new PDO("mysql:host=$h;dbname=$db;charset=utf8mb4", $u, $p, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+      exit(0);
+    } catch (Throwable $e) {
+      exit(1);
+    }
+  '; then
+    echo "[entrypoint] ERROR: No se pudo conectar a la base de datos después de 60 intentos. Abortando." >&2
+    exit 1
+  fi
+
   # Ejecutar el instalador CLI como www-data para evitar problemas de permisos
   su -s /bin/bash www-data -c "php /var/www/html/admin/cli/install.php \
     --non-interactive \
@@ -58,7 +76,7 @@ ${MOODLE_DB_PASS:?La variable MOODLE_DB_PASS es requerida}"
     --fullname='Academia ChevyPlan' \
     --shortname='AcademiaCP' \
     --adminuser='admin' \
-    --adminpass='Admin123*' \
+    --adminpass="${MOODLE_ADMIN_PASS}" \
     --adminemail='admin@chevyplan.com.ec'"
 
   echo "[entrypoint] Instalación completada."
