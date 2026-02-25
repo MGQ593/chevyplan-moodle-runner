@@ -50,7 +50,7 @@ ${MOODLE_DB_PASS:?La variable MOODLE_DB_PASS es requerida}"
     --lang=es \
     --wwwroot='${MOODLE_WWWROOT}' \
     --dataroot='/var/www/moodledata' \
-    --dbtype='mysqli' \
+    --dbtype='mariadb' \
     --dbhost='${MOODLE_DB_HOST}' \
     --dbname='${MOODLE_DB_NAME}' \
     --dbuser='${MOODLE_DB_USER}' \
