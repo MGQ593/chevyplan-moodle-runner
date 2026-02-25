@@ -42,7 +42,7 @@ RUN set -eux; \
 
 # Descargar Moodle 5.1 estable (tgz) y desplegarlo en /var/www/html
 # Nota: "stable51" corresponde a la rama estable 5.1.
-ARG MOODLE_TGZ_URL="https://download.moodle.org/download.php/direct/stable51/moodle-latest-51.tgz"
+ARG MOODLE_TGZ_URL="https://download.moodle.org/download.php/direct/stable501/moodle-5.1.3.tgz"
 
 RUN set -eux; \
     rm -rf /var/www/html/*; \
