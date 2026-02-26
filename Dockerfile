@@ -8,6 +8,7 @@ RUN set -eux; \
       libjpeg62-turbo-dev \
       libfreetype6-dev \
       libzip-dev \
+      libicu-dev \
       unzip \
       git \
       curl \
@@ -25,6 +26,7 @@ RUN set -eux; \
       pdo_mysql \
       zip \
       opcache \
+      intl \
     ; \
     a2enmod rewrite
 
@@ -39,6 +41,8 @@ RUN set -eux; \
     echo 'opcache.revalidate_freq=60'; \
     echo 'opcache.validate_timestamps=1'; \
   } > /usr/local/etc/php/conf.d/opcache-recommended.ini
+
+RUN echo 'max_input_vars = 5000' > /usr/local/etc/php/conf.d/moodle-php.ini
 
 # Descargar Moodle 5.1 estable (tgz) y desplegarlo en /var/www/html
 # Nota: "stable51" corresponde a la rama estable 5.1.
