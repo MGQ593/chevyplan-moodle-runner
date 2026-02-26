@@ -1,6 +1,5 @@
 FROM php:8.2-apache
 
-# Dependencias del sistema requeridas por extensiones de PHP y por Moodle
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -16,7 +15,6 @@ RUN set -eux; \
     ; \
     rm -rf /var/lib/apt/lists/*
 
-# Extensiones PHP necesarias para Moodle
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
     docker-php-ext-install -j"$(nproc)" \
@@ -28,9 +26,9 @@ RUN set -eux; \
       opcache \
       intl \
     ; \
-    a2enmod rewrite
+    a2enmod rewrite remoteip
 
-# Opcache recomendado para producción (ajusta según tu carga)
+# PHP config para Moodle
 RUN set -eux; \
   { \
     echo 'opcache.enable=1'; \
@@ -40,36 +38,44 @@ RUN set -eux; \
     echo 'opcache.max_accelerated_files=20000'; \
     echo 'opcache.revalidate_freq=60'; \
     echo 'opcache.validate_timestamps=1'; \
-  } > /usr/local/etc/php/conf.d/opcache-recommended.ini
+  } > /usr/local/etc/php/conf.d/opcache-recommended.ini; \
+  { \
+    echo 'max_input_vars = 5000'; \
+    echo 'session.cookie_httponly = 1'; \
+  } > /usr/local/etc/php/conf.d/moodle-php.ini
 
-RUN echo 'max_input_vars = 5000' > /usr/local/etc/php/conf.d/moodle-php.ini
+# RemoteIP para proxy
+RUN echo '<IfModule remoteip_module>\n\
+    RemoteIPHeader X-Forwarded-For\n\
+    RemoteIPInternalProxy 10.0.0.0/8\n\
+    RemoteIPInternalProxy 172.16.0.0/12\n\
+    RemoteIPInternalProxy 192.168.0.0/16\n\
+</IfModule>' > /etc/apache2/conf-available/remoteip.conf; \
+    a2enconf remoteip
 
-# Descargar Moodle 5.1 estable (tgz) y desplegarlo en /var/www/html
-# Nota: "stable51" corresponde a la rama estable 5.1.
+# DocumentRoot apunta a public (Moodle 5.1)
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
 ARG MOODLE_TGZ_URL="https://download.moodle.org/download.php/direct/stable501/moodle-5.1.3.tgz"
-
 RUN set -eux; \
     rm -rf /var/www/html/*; \
     curl -fsSL "${MOODLE_TGZ_URL}" -o /tmp/moodle.tgz; \
     tar -xzf /tmp/moodle.tgz -C /var/www/html --strip-components=1; \
     rm -f /tmp/moodle.tgz; \
-    mkdir -p /var/www/moodledata; \
+    mkdir -p /var/www/moodledata/sessions; \
     chown -R www-data:www-data /var/www/html /var/www/moodledata; \
     find /var/www/html -type d -exec chmod 0755 {} \;; \
     find /var/www/html -type f -exec chmod 0644 {} \;; \
     chmod 0770 /var/www/moodledata
 
-# Copiar entrypoint
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Variables por defecto (puedes sobreescribirlas en runtime)
-ENV MOODLE_WWWROOT="http://localhost" \
-    MOODLE_DB_HOST="db" \
+ENV MOODLE_WWWROOT="https://automatizacion-moodle-app.0hidyn.easypanel.host" \
+    MOODLE_DB_HOST="bases_moodle-db" \
     MOODLE_DB_NAME="moodle" \
     MOODLE_DB_USER="moodle" \
-    MOODLE_DB_PASS="moodle"
+    MOODLE_DB_PASS="MoodleDB@2026!"
 
 WORKDIR /var/www/html
-
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
